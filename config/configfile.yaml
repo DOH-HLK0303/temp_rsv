@@ -11,17 +11,13 @@ builds_to_run:
 resolutions_to_run:
 - all-time
 - 6y
-- 3y
 subtypes:
 - a
 - b
 inputs:
-- name: ppx_open
-  metadata: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/metadata.tsv.gz
-  sequences: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/sequences.fasta.xz
-- name: ppx_restricted
-  metadata: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/metadata_restricted.tsv.gz
-  sequences: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/sequences_restricted.fasta.xz
+  - name: example-data
+    metadata: example_data/{a_or_b}/metadata.tsv
+    sequences: example_data/{a_or_b}/sequences.fasta
 exclude: config/outliers_ppx.txt
 description: config/description.md
 strain_id_field: accession
