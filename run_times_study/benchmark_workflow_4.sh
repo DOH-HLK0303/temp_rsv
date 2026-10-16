@@ -6,7 +6,7 @@ set -u -o pipefail
 targets=(results/{a,b}/{genome,G,F,F-antibody-escape}/{all-time,6y}/subsampled.fasta)
 
 
-for i in $(seq 1 3); do
+for i in $(seq 1 2); do
 
     # Delete prior outputs
     nextstrain build . "${targets[@]}" --delete-all-output --cores 8 > /dev/null 2>&1
