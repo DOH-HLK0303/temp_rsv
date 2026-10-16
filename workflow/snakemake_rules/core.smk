@@ -62,7 +62,6 @@ rule subsample:
         metadata="results/{a_or_b}/metadata.tsv",
         sequence_index=rules.index_sequences.output,
         config="results/{a_or_b}/{build_name}/{resolution}/subsample_config.yaml",
-        referenced_files=lambda w: get_referenced_files(f"results/{w.a_or_b}/{w.build_name}/{w.resolution}/subsample_config.yaml"),
     output:
         sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsampled.fasta",
     log:
