@@ -12,7 +12,7 @@ for i in $(seq 1 3); do
 
     # Run up to the subsampled targets (last step before tree-building)
     start=$(date +%s)
-    nextstrain build . "${targets[@]}" --cores 1 > /dev/null 2>&1 || { echo "run $i failed"; exit 1; }
+    nextstrain build . "${targets[@]}" --cores 1  --forceall > /dev/null 2>&1 || { echo "run $i failed"; exit 1; }
     end=$(date +%s)
 
     echo "run $i: $((end - start)) s" | tee -a run_times_study/run_times/run_times_6.txt
