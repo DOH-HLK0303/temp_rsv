@@ -61,9 +61,9 @@ rule subsample:
         sequences="results/{a_or_b}/sequences.fasta",
         metadata="results/{a_or_b}/metadata.tsv",
         sequence_index=rules.index_sequences.output,
-        config="results/{a_or_b}/{build_name}/{resolution}/subsample_config.yaml",
+        config="results/{a_or_b}/{build_name}/{resolution}/initial_filter_config.yaml",
     output:
-        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsampled.fasta",
+        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsample.fasta",
     log:
         "logs/subsample_{a_or_b}_{build_name}_{resolution}.txt",
     benchmark:
@@ -422,12 +422,61 @@ def get_reference(w):
         return build_dir + f"/{w.a_or_b}/{gene}_reference.gbk"
 
 
+rule index_sequences2:
+    """
+    Creating an index of sequence composition for filtering.
+    """
+    input:
+        alignment=get_alignment,
+    output:
+        sequence_index=build_dir + "/{a_or_b}/{build_name}/{resolution}/sequence_index2.tsv",
+    log:
+        "logs/index_sequences2_{a_or_b}_{build_name}_{resolution}.txt"
+    benchmark:
+        "benchmarks/index_sequences2_{a_or_b}_{build_name}_{resolution}.txt"
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        augur index \
+            --sequences {input.alignment} \
+            --output {output.sequence_index}
+        """
+
+rule subsample2:
+    input:
+        alignment=get_alignment,
+        metadata="results/{a_or_b}/metadata.tsv",
+        sequence_index=rules.index_sequences2.output,
+        config="results/{a_or_b}/{build_name}/{resolution}/subsample2_config.yaml",
+    output:
+        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsampled.fasta",
+    log:
+        "logs/subsample2_{a_or_b}_{build_name}_{resolution}.txt",
+    benchmark:
+        "benchmarks/subsample2_{a_or_b}_{build_name}_{resolution}.txt",
+    params:
+        strain_id=config["strain_id_field"],
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        augur subsample \
+            --sequences {input.alignment} \
+            --sequence-index {input.sequence_index} \
+            --metadata {input.metadata} \
+            --metadata-id-columns {params.strain_id} \
+            --config {input.config} \
+            --output-sequences {output.sequences}
+        """
+
+
 rule tree:
     """
     Building tree
     """
     input:
-        alignment=get_alignment,
+        alignment = rules.subsample2.output.sequences,
     output:
         tree=build_dir + "/{a_or_b}/{build_name}/{resolution}/tree_raw.nwk",
     log:
@@ -456,7 +505,7 @@ rule refine:
     """
     input:
         tree=rules.tree.output.tree,
-        alignment=get_alignment,
+        alignment=rules.subsample2.output.sequences,
         metadata="results/{a_or_b}/metadata.tsv",
     output:
         tree=build_dir + "/{a_or_b}/{build_name}/{resolution}/tree.nwk",
