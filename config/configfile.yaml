@@ -15,9 +15,12 @@ subtypes:
 - a
 - b
 inputs:
-  - name: example-data
-    metadata: example_data/{a_or_b}/metadata.tsv
-    sequences: example_data/{a_or_b}/sequences.fasta
+- name: ppx_open
+  metadata: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/metadata.tsv.gz
+  sequences: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/sequences.fasta.xz
+- name: ppx_restricted
+  metadata: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/metadata_restricted.tsv.gz
+  sequences: https://data.nextstrain.org/files/workflows/rsv/{a_or_b}/sequences_restricted.fasta.xz
 exclude: config/outliers_ppx.txt
 description: config/description.md
 strain_id_field: accession
