@@ -59,29 +59,10 @@ rule newreference:
 rule subsample:
     input:
         sequences="results/{a_or_b}/sequences.fasta",
-        metadata="results/{a_or_b}/metadata.tsv",
-        sequence_index=rules.index_sequences.output,
-        config="results/{a_or_b}/{build_name}/{resolution}/initial_filter_config.yaml",
     output:
         sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsample.fasta",
-    log:
-        "logs/subsample_{a_or_b}_{build_name}_{resolution}.txt",
-    benchmark:
-        "benchmarks/subsample_{a_or_b}_{build_name}_{resolution}.txt",
-    params:
-        strain_id=config["strain_id_field"],
     shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        augur subsample \
-            --sequences {input.sequences} \
-            --sequence-index {input.sequence_index} \
-            --metadata {input.metadata} \
-            --metadata-id-columns {params.strain_id} \
-            --config {input.config} \
-            --output-sequences {output.sequences}
-        """
+        "cp {input.sequences} {output.sequences}"
 
 rule combine_samples:
     input:
