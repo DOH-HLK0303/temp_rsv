@@ -29,10 +29,12 @@ bash run_times_study/compare_align_times.sh
 
 # Test run times under different workflow configurations
 
-## Run the above seperately from these 3 branches:
+## Run the above seperately from these 5 branches:
 - test-run-times: no edits to workflow except test data is used & subsample sizes are decreased
-- test-align-before-subsample: "Workflow is edited to move subsampling after alignment step. The initial subsampling step is left but edited to only do QC, length, & date fitlering. Test data is used & subsample sizes are decreased.
+- test-align-before-subsample: Workflow is edited to move subsampling after alignment step. The initial subsampling step is left but edited to only do QC, length, & date filtering (& split by build & resolution). Test data is used & subsample sizes are decreased.
+- test-align-before-subsample-V2: Same as above but the initial subsampling step does not seperate per build & resolution until the final subsampling step
 - test-align-before-subsample-no-pre-filter: Workflow is edited to move subsampling after alignment step. No initial filtering is done, although this step is still used to stratify by build. Test data is used & subsample sizes are decreased.
+- test-align-before-subsample-no-pre-filter-V2: Same as above but the initial subsampling step is entirely removed, so the workflow is not seperated per build & resolution until the final subsampling step
 
 1. Copy the folder `C:\Users\hlk0303\OneDrive - Washington State Executive Branch Agencies\Investigations\rsv_align_subsample_run_times\scripts\run_times_study` to the root directory
 
