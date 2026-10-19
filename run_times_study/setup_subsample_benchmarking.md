@@ -114,3 +114,13 @@ nextstrain build . \
 --forceall \
 --dag | dot -Tsvg > dag.svg
 ```
+
+Or, for the unedited workflow, go through the alignment step
+```
+nextstrain build . \
+"results/a/genome/all-time/hybrid_alignment.fasta" \
+"results/a/genome/6y/hybrid_alignment.fasta" \
+"results/a/F/all-time/hybrid_alignment.fasta" \
+"results/a/F/6y/hybrid_alignment.fasta" \
+--forceall \
+--dag | dot -Tsvg > dag.svg
