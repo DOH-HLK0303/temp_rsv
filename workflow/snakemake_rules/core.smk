@@ -28,6 +28,33 @@ rule index_sequences:
             --output {output.sequence_index}
         """
 
+rule subsample:
+    input:
+        sequences="results/{a_or_b}/sequences.fasta",
+        metadata="results/{a_or_b}/metadata.tsv",
+        sequence_index=rules.index_sequences.output,
+        config="results/{a_or_b}/genome/all-time/initial_filter_config.yaml",
+    output:
+        sequences=build_dir + "/{a_or_b}/subsample.fasta",
+    log:
+        "logs/subsample_{a_or_b}.txt",
+    benchmark:
+        "benchmarks/subsample_{a_or_b}.txt",
+    params:
+        strain_id=config["strain_id_field"],
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        augur subsample \
+            --sequences {input.sequences} \
+            --sequence-index {input.sequence_index} \
+            --metadata {input.metadata} \
+            --metadata-id-columns {params.strain_id} \
+            --config {input.config} \
+            --output-sequences {output.sequences}
+        """
+
 
 rule newreference:
     """
@@ -251,7 +278,7 @@ rule genome_align:
     Aligning sequences to the reference
     """
     input:
-        sequences="results/{a_or_b}/sequences.fasta",
+        sequences=rules.subsample.output.sequences,
         dataset=rules.get_nextclade_dataset.output.dataset,
     output:
         alignment=build_dir + "/{a_or_b}/sequences.aligned.fasta",
