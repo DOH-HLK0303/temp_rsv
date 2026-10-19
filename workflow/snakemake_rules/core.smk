@@ -6,28 +6,6 @@ This part of the workflow expects input files
 from augur.subsample import get_referenced_files
 
 
-rule index_sequences:
-    """
-    Creating an index of sequence composition for filtering.
-    """
-    input:
-        sequences="results/{a_or_b}/sequences.fasta",
-    output:
-        sequence_index=build_dir
-        + "/{a_or_b}/sequence_index.tsv",
-    log:
-        "logs/index_sequences_{a_or_b}.txt"
-    benchmark:
-        "benchmarks/index_sequences_{a_or_b}.txt"
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        augur index \
-            --sequences {input.sequences} \
-            --output {output.sequence_index}
-        """
-
 
 rule newreference:
     """
