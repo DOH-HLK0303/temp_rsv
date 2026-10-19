@@ -56,41 +56,6 @@ rule newreference:
         """
 
 
-rule subsample:
-    input:
-        sequences="results/{a_or_b}/sequences.fasta",
-    output:
-        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsample.fasta",
-    shell:
-        "cp {input.sequences} {output.sequences}"
-
-rule combine_samples:
-    input:
-        subsamples=lambda w: (
-            [rules.subsample.output.sequences]
-            # potentially add sequences sampled to include maximum escape sequences
-            + (
-                [
-                    f"{build_dir}/{w.a_or_b}/{w.build_name}/{w.resolution}/filtered_{antibody}_{scoretype}.fasta"
-                    for antibody in config["f_dms_antibodies"]
-                    for scoretype in ["total_escape", "max_escape"]
-                ]
-                if w.build_name in config["enrich_antibody_escape"]
-                else []
-            )
-        ),
-    output:
-        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/filtered.fasta",
-    log:
-        "logs/combine_samples_{a_or_b}_{build_name}_{resolution}.txt"
-    benchmark:
-        "benchmarks/combine_samples_{a_or_b}_{build_name}_{resolution}.txt"
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        cat {input.subsamples} | seqkit rmdup > {output}
-        """
 
 
 rule get_nextclade_dataset:
@@ -126,11 +91,11 @@ rule filter_for_f_antibody_escape:
         metadata="results/{a_or_b}/metadata.tsv",
         exclude=config["exclude"],
     output:
-        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/filtered_for_alignment.fasta",
+        sequences=build_dir + "/{a_or_b}/pre_subsample/filtered_for_alignment.fasta",
     log:
-        "logs/filter_for_f_antibody_escape_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/filter_for_f_antibody_escape_{a_or_b}.txt"
     benchmark:
-        "benchmarks/filter_for_f_antibody_escape_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/filter_for_f_antibody_escape_{a_or_b}.txt"
     params:
         min_coverage=lambda w: f'{w.build_name.split("-")[0]}_coverage>{config["filter_for_f_antibody_escape"]["min_coverage"][w.build_name]}',
         min_length=lambda w: config["filter_for_f_antibody_escape"]["min_length"][w.build_name],
@@ -161,16 +126,16 @@ rule align_pre_subsample_sequences:
         sequences=rules.filter_for_f_antibody_escape.output.sequences,
         dataset=rules.get_nextclade_dataset.output.dataset,
     output:
-        alignment=build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/sequences.aligned.fasta",
-        translations=directory(build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/translations"),
-        translations_done=build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/translations.done",
+        alignment=build_dir + "/{a_or_b}/pre_subsample/sequences.aligned.fasta",
+        translations=directory(build_dir + "/{a_or_b}/pre_subsample/translations"),
+        translations_done=build_dir + "/{a_or_b}/pre_subsample/translations.done",
     params:
         genes=lambda w: config["cds"][w.build_name],
     threads: 8
     log:
-        "logs/align_pre_subsample_sequences_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/align_pre_subsample_sequences_{a_or_b}.txt"
     benchmark:
-        "benchmarks/align_pre_subsample_sequences_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/align_pre_subsample_sequences_{a_or_b}.txt"
     shell:
         r"""
         exec &> >(tee {log:q})
@@ -192,13 +157,13 @@ rule score_pre_subsample_f_proteins:
         translations_done=rules.align_pre_subsample_sequences.output.translations_done,
         dms_scores=config["f_dms_data"],
     output:
-        scores=build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/f_protein_scores.tsv",
+        scores=build_dir + "/{a_or_b}/pre_subsample/f_protein_scores.tsv",
     log:
-        "logs/score_pre_subsample_f_proteins_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/score_pre_subsample_f_proteins_{a_or_b}.txt"
     benchmark:
-        "benchmarks/score_pre_subsample_f_proteins_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/score_pre_subsample_f_proteins_{a_or_b}.txt"
     params:
-        f_sequences=lambda w: build_dir + f"/{w.a_or_b}/{w.build_name}/{w.resolution}/pre_subsample/translations/F.fasta",
+        f_sequences=lambda w: build_dir + f"/{w.a_or_b}/pre_subsample/translations/F.fasta",
         dms_antibodies=lambda w: " ".join(shlex.quote(ab) for ab in config["f_dms_antibodies"]),
         only_positive_escape=config["dms_only_positive_escape"],
     shell:
@@ -222,11 +187,11 @@ rule add_f_scores_to_pre_subsample_metadata:
         original_metadata="results/{a_or_b}/metadata.tsv",
         f_scores=rules.score_pre_subsample_f_proteins.output.scores,
     output:
-        enhanced_metadata=build_dir + "/{a_or_b}/{build_name}/{resolution}/pre_subsample/metadata_with_scores.tsv",
+        enhanced_metadata=build_dir + "/{a_or_b}/pre_subsample/metadata_with_scores.tsv",
     log:
-        "logs/add_f_scores_to_pre_subsample_metadata_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/add_f_scores_to_pre_subsample_metadata_{a_or_b}.txt"
     benchmark:
-        "benchmarks/add_f_scores_to_pre_subsample_metadata_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/add_f_scores_to_pre_subsample_metadata_{a_or_b}.txt"
     params:
         strain_id=config["strain_id_field"],
     shell:
@@ -252,18 +217,18 @@ rule enrich_antibody_escape:
         sequences="results/{a_or_b}/sequences.fasta",
         metadata=rules.add_f_scores_to_pre_subsample_metadata.output.enhanced_metadata,
     output:
-        sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/filtered_{antibody}_{scoretype}.fasta"
+        sequences=build_dir + "/{a_or_b}/filtered_{antibody}_{scoretype}.fasta"
     log:
-        "logs/enrich_antibody_escape_{a_or_b}_{build_name}_{resolution}_{antibody}_{scoretype}.txt"
+        "logs/enrich_antibody_escape_{a_or_b}_{antibody}_{scoretype}.txt"
     benchmark:
-        "benchmarks/enrich_antibody_escape_{a_or_b}_{build_name}_{resolution}_{antibody}_{scoretype}.txt"
+        "benchmarks/enrich_antibody_escape_{a_or_b}_{antibody}_{scoretype}.txt"
     params:
         strain_id=config["strain_id_field"],
         escape_col=lambda w: f"{w.antibody}_{w.scoretype}",
-        nseqs=lambda w: config["enrich_antibody_escape"][w.build_name]["nseqs_per_antibody_scoretype"],
-        group_by=lambda w: " ".join(shlex.quote(g) for g in config["enrich_antibody_escape"][w.build_name]["group_by"]),
-        max_identical_f_prot_muts=lambda w: config["enrich_antibody_escape"][w.build_name]["max_identical_f_prot_muts"],
-        max_identical_max_escape_mut=lambda w: config["enrich_antibody_escape"][w.build_name]["max_identical_max_escape_mut"],
+        nseqs=lambda w: config["enrich_antibody_escape"]["F-antibody-escape"]["nseqs_per_antibody_scoretype"],
+        group_by=lambda w: " ".join(shlex.quote(g) for g in config["enrich_antibody_escape"]["F-antibody-escape"]["group_by"]),
+        max_identical_f_prot_muts=lambda w: config["enrich_antibody_escape"]["F-antibody-escape"]["max_identical_f_prot_muts"],
+        max_identical_max_escape_mut=lambda w: config["enrich_antibody_escape"]["F-antibody-escape"]["max_identical_max_escape_mut"],
     shell:
         r"""
         exec &> >(tee {log:q})
@@ -286,18 +251,18 @@ rule genome_align:
     Aligning sequences to the reference
     """
     input:
-        sequences=rules.combine_samples.output.sequences,
+        sequences="results/{a_or_b}/sequences.fasta",
         dataset=rules.get_nextclade_dataset.output.dataset,
     output:
-        alignment=build_dir + "/{a_or_b}/{build_name}/{resolution}/sequences.aligned.fasta",
-        translations=directory(build_dir + "/{a_or_b}/{build_name}/{resolution}/translations"),
+        alignment=build_dir + "/{a_or_b}/sequences.aligned.fasta",
+        translations=directory(build_dir + "/{a_or_b}/translations"),
     params:
-        genes=lambda w: config["cds"][w.build_name],
+        genes=config["cds"]["F"],
     threads: 4
     log:
-        "logs/genome_align_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/genome_align_{a_or_b}.txt"
     benchmark:
-        "benchmarks/genome_align_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/genome_align_{a_or_b}.txt"
     shell:
         r"""
         exec &> >(tee {log:q})
@@ -318,11 +283,11 @@ rule cut:
         reference="config/{a_or_b}reference.gbk",
     output:
         slicedalignment=build_dir
-        + "/{a_or_b}/{build_name}/{resolution}/{gene}_slicedalignment.fasta",
+        + "/{a_or_b}/{gene}_slicedalignment.fasta",
     log:
-        "logs/cut_{a_or_b}_{build_name}_{resolution}_{gene}.txt"
+        "logs/cut_{a_or_b}_{gene}.txt"
     benchmark:
-        "benchmarks/cut_{a_or_b}_{build_name}_{resolution}_{gene}.txt"
+        "benchmarks/cut_{a_or_b}_{gene}.txt"
     shell:
         r"""
         exec &> >(tee {log:q})
@@ -342,11 +307,11 @@ rule realign:
         reference=build_dir
         + "/{a_or_b}/{gene}_reference.fasta",
     output:
-        realigned=build_dir + "/{a_or_b}/{build_name}/{resolution}/{gene}_aligned.fasta",
+        realigned=build_dir + "/{a_or_b}/{gene}_aligned.fasta",
     log:
-        "logs/realign_{a_or_b}_{build_name}_{resolution}_{gene}.txt"
+        "logs/realign_{a_or_b}_{gene}.txt"
     benchmark:
-        "benchmarks/realign_{a_or_b}_{build_name}_{resolution}_{gene}.txt"
+        "benchmarks/realign_{a_or_b}_{gene}.txt"
     threads: 2
     shell:
         r"""
@@ -362,15 +327,15 @@ rule realign:
 rule hybrid_align:
     input:
         original=rules.genome_align.output.alignment,
-        G_alignment=build_dir + "/{a_or_b}/{build_name}/{resolution}/G_aligned.fasta",
+        G_alignment=build_dir + "/{a_or_b}/G_aligned.fasta",
         reference="config/{a_or_b}reference.gbk",
     output:
         hybrid_alignment=build_dir
-        + "/{a_or_b}/{build_name}/{resolution}/hybrid_alignment.fasta",
+        + "/{a_or_b}/hybrid_alignment.fasta",
     log:
-        "logs/hybrid_align_{a_or_b}_{build_name}_{resolution}.txt"
+        "logs/hybrid_align_{a_or_b}.txt"
     benchmark:
-        "benchmarks/hybrid_align_{a_or_b}_{build_name}_{resolution}.txt"
+        "benchmarks/hybrid_align_{a_or_b}.txt"
     shell:
         r"""
         exec &> >(tee {log:q})
@@ -380,7 +345,7 @@ rule hybrid_align:
             --original {input.original} \
             --reference {input.reference} \
             --output {output.hybrid_alignment} \
-            --build {wildcards.build_name}
+            --build "genome"
         """
 
 
@@ -391,7 +356,7 @@ def get_alignment(w):
         gene = config["cds"][w.build_name]
         return (
             build_dir
-            + f"/{w.a_or_b}/{w.build_name}/{w.resolution}/{gene}_aligned.fasta"
+            + f"/{w.a_or_b}/{gene}_aligned.fasta"
         )
 
 
@@ -403,32 +368,11 @@ def get_reference(w):
         return build_dir + f"/{w.a_or_b}/{gene}_reference.gbk"
 
 
-rule index_sequences2:
-    """
-    Creating an index of sequence composition for filtering.
-    """
-    input:
-        alignment=get_alignment,
-    output:
-        sequence_index=build_dir + "/{a_or_b}/{build_name}/{resolution}/sequence_index2.tsv",
-    log:
-        "logs/index_sequences2_{a_or_b}_{build_name}_{resolution}.txt"
-    benchmark:
-        "benchmarks/index_sequences2_{a_or_b}_{build_name}_{resolution}.txt"
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        augur index \
-            --sequences {input.alignment} \
-            --output {output.sequence_index}
-        """
 
 rule subsample2:
     input:
         alignment=get_alignment,
         metadata="results/{a_or_b}/metadata.tsv",
-        sequence_index=rules.index_sequences2.output,
         config="results/{a_or_b}/{build_name}/{resolution}/subsample2_config.yaml",
     output:
         sequences=build_dir + "/{a_or_b}/{build_name}/{resolution}/subsampled.fasta",
@@ -444,7 +388,6 @@ rule subsample2:
 
         augur subsample \
             --sequences {input.alignment} \
-            --sequence-index {input.sequence_index} \
             --metadata {input.metadata} \
             --metadata-id-columns {params.strain_id} \
             --config {input.config} \
